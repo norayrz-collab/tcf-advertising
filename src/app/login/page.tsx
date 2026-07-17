@@ -16,7 +16,7 @@ export default function LoginPage() {
         <Image src="/tcf-logo.webp" alt="TCF" width={40} height={40} className="mb-4 rounded" unoptimized />
         <h1 className="mb-1 text-lg font-semibold">TCF Advertising</h1>
         <p className="mb-6 text-sm text-black/60 dark:text-white/60">
-          Sign in with your invited email and the shared password.
+          Sign in with your email and password.
         </p>
 
         <label className="mb-1 block text-sm font-medium" htmlFor="email">
