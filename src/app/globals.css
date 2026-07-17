@@ -2,14 +2,44 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #1e1e1e;
+
+  /* TCF brand tokens, pulled from tcf.team's own stylesheet */
+  --color-tcf-primary: #faa61a;
+  --color-tcf-secondary: #1e1e1e;
+  --color-tcf-grey-01: #232323;
+  --color-tcf-grey-02: #333333;
+  --color-tcf-grey-03: #6f6f6f;
+  --color-tcf-grey-04: #8c8c8c;
+  --color-tcf-grey-05: #d9d9d9;
+  --color-tcf-grey-06: #efeeee;
+  --color-tcf-grey-07: #f2f2f2;
+  --color-tcf-bg-grey: #f8f8f8;
+  --color-tcf-divider: #ebecec;
+  --color-tcf-success: #00ad48;
+  --color-tcf-warning: #eba900;
+  --color-tcf-error: #e00101;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-outfit);
+
+  --color-primary: var(--color-tcf-primary);
+  --color-secondary: var(--color-tcf-secondary);
+  --color-grey-01: var(--color-tcf-grey-01);
+  --color-grey-02: var(--color-tcf-grey-02);
+  --color-grey-03: var(--color-tcf-grey-03);
+  --color-grey-04: var(--color-tcf-grey-04);
+  --color-grey-05: var(--color-tcf-grey-05);
+  --color-grey-06: var(--color-tcf-grey-06);
+  --color-grey-07: var(--color-tcf-grey-07);
+  --color-bg-grey: var(--color-tcf-bg-grey);
+  --color-divider: var(--color-tcf-divider);
+  --color-success: var(--color-tcf-success);
+  --color-warning: var(--color-tcf-warning);
+  --color-error: var(--color-tcf-error);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,5 +52,5 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-outfit), sans-serif;
 }

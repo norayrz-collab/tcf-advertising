@@ -32,9 +32,14 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.local.example
 
 # vercel
 .vercel
+
+# local dev fallback store (used only when Redis isn't configured)
+.local-store.json
+.refresh-errors.log
 
 # typescript
 *.tsbuildinfo
