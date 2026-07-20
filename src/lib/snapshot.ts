@@ -73,6 +73,12 @@ interface IndividualSheetTarget {
   sourceUrl: string;
   section: Section;
   tabNames: string[];
+  /** From THIS target's own source row (Ads Campaign details for CF/Ecom,
+   * Lead- Full- Kick off for CF Full) — never a cross-tab merged lookup. A
+   * project name can exist in both tabs (e.g. a stale/closed duplicate in
+   * the other one), and merging by name alone can silently let the wrong
+   * tab's commission win. */
+  commissionPct: number | null;
 }
 
 /** Fetches each project's own "Live Ads"/"Advertising Performance"-style tab
@@ -88,7 +94,6 @@ interface IndividualSheetTarget {
  * commissionPct using the merged project metadata. */
 async function fetchIndividualSheetRows(
   targets: IndividualSheetTarget[],
-  metaByProject: Map<string, ProjectMeta>,
   sinceDate: string
 ): Promise<{ rows: ProjectDayRow[]; warnings: string[] }> {
   const results = await mapWithConcurrency(targets, INDIVIDUAL_SHEET_FETCH_CONCURRENCY, async (target) => {
@@ -105,7 +110,7 @@ async function fetchIndividualSheetRows(
     try {
       const values = await fetchExternalTabValues(spreadsheetId, target.tabNames);
       const parsed = parseLiveAdsTab(values, target.project, target.section, `${target.section} (${target.project})`);
-      const commissionPct = metaByProject.get(target.project.trim().toLowerCase())?.commissionPct ?? null;
+      const commissionPct = target.commissionPct;
 
       const rows = parsed.rows
         .filter((r) => (r.date ?? "") >= sinceDate)
@@ -425,9 +430,6 @@ export async function buildSnapshot(): Promise<Snapshot> {
   );
 
   const projectMeta = mergeProjectMeta(campaignDetails.rows, leadFull.rows);
-  const metaByProject = new Map(
-    projectMeta.map((m) => [m.project.trim().toLowerCase(), m])
-  );
 
   const sinceDate = await getFullCampaignsSinceDate();
 
@@ -442,6 +444,7 @@ export async function buildSnapshot(): Promise<Snapshot> {
     project: string;
     sourceUrl: string;
     section: Section;
+    commissionPct: number | null;
   }
   const candidates: Candidate[] = [];
 
@@ -453,7 +456,12 @@ export async function buildSnapshot(): Promise<Snapshot> {
 
   for (const m of campaignDetails.rows) {
     if (m.sourceUrl && isIncluded(m)) {
-      candidates.push({ project: m.project, sourceUrl: m.sourceUrl, section: classifySection(m.project) });
+      candidates.push({
+        project: m.project,
+        sourceUrl: m.sourceUrl,
+        section: classifySection(m.project),
+        commissionPct: m.commissionPct,
+      });
     }
   }
   for (const m of leadFull.rows) {
@@ -461,7 +469,12 @@ export async function buildSnapshot(): Promise<Snapshot> {
     // since it reads a differently-shaped "Lead Generation" tab and computes
     // revenue from spend, not raise. Only "Full" entries feed CF_FULL here.
     if (m.type === "Full" && m.sourceUrl && isIncluded(m)) {
-      candidates.push({ project: m.project, sourceUrl: m.sourceUrl, section: "CF_FULL" });
+      candidates.push({
+        project: m.project,
+        sourceUrl: m.sourceUrl,
+        section: "CF_FULL",
+        commissionPct: m.commissionPct,
+      });
     }
   }
 
@@ -475,13 +488,14 @@ export async function buildSnapshot(): Promise<Snapshot> {
       project: c.project,
       sourceUrl: c.sourceUrl,
       section: c.section,
+      commissionPct: c.commissionPct,
       // Ecom individual sheets more often use "Advertising Performance" as
       // the tab name instead of "Live Ads" — try that first for Ecom.
       tabNames: c.section === "ECOM" ? ["Advertising Performance", "Live Ads"] : ["Live Ads"],
     });
   }
 
-  const individual = await fetchIndividualSheetRows(targets, metaByProject, sinceDate);
+  const individual = await fetchIndividualSheetRows(targets, sinceDate);
   warnings.push(...individual.warnings);
 
   const pl = await fetchPlAdsRows(plAds.rows);
