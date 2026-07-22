@@ -28,7 +28,7 @@ function BreakdownTable({ label, rows }: { label: string; rows: ProjectDayRow[] 
         <thead className="border-b border-black/10 dark:border-white/10">
           <tr>
             <th className="px-3 py-2 text-left font-medium text-black/50 dark:text-white/50"></th>
-            <th className="px-3 py-2 text-right font-medium">Total</th>
+            <th className="px-3 py-2 text-right font-semibold text-primary">Total</th>
             <th className="px-3 py-2 text-right font-medium">Facebook</th>
             <th className="px-3 py-2 text-right font-medium">Google</th>
           </tr>
@@ -36,15 +36,15 @@ function BreakdownTable({ label, rows }: { label: string; rows: ProjectDayRow[] 
         <tbody>
           <tr className="border-b border-black/5 dark:border-white/5">
             <td className="px-3 py-2 text-black/60 dark:text-white/60">Spend</td>
-            <td className="px-3 py-2 text-right">{currency.format(kpis.spend)}</td>
+            <td className="px-3 py-2 text-right font-semibold">{currency.format(kpis.spend)}</td>
             <td className="px-3 py-2 text-right">{currency.format(platforms.facebook.spend)}</td>
             <td className="px-3 py-2 text-right">{currency.format(platforms.google.spend)}</td>
           </tr>
           <tr>
-            <td className="px-3 py-2 text-black/60 dark:text-white/60">Raise</td>
-            <td className="px-3 py-2 text-right">{currency.format(kpis.raise)}</td>
-            <td className="px-3 py-2 text-right">{currency.format(platforms.facebook.raise)}</td>
-            <td className="px-3 py-2 text-right">{currency.format(platforms.google.raise)}</td>
+            <td className="px-3 py-2 font-semibold text-primary">Raise</td>
+            <td className="px-3 py-2 text-right font-semibold text-primary">{currency.format(kpis.raise)}</td>
+            <td className="px-3 py-2 text-right font-semibold">{currency.format(platforms.facebook.raise)}</td>
+            <td className="px-3 py-2 text-right font-semibold">{currency.format(platforms.google.raise)}</td>
           </tr>
         </tbody>
       </table>
