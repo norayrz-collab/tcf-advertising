@@ -52,6 +52,17 @@ function GuruProjectDrilldown({ guru, rows, onBack }: { guru: string; rows: Proj
       <h3 className="text-base font-semibold">{guru}</h3>
       {[...bySection.entries()].map(([section, projs]) => {
         const hasPlatform = HAS_PLATFORM_SPLIT.includes(section);
+        const totals = projs.reduce(
+          (acc, p) => ({
+            spend: acc.spend + p.spend,
+            fbSpend: acc.fbSpend + p.fbSpend,
+            googleSpend: acc.googleSpend + p.googleSpend,
+            raise: acc.raise + p.raise,
+            fbRaise: acc.fbRaise + p.fbRaise,
+            googleRaise: acc.googleRaise + p.googleRaise,
+          }),
+          { spend: 0, fbSpend: 0, googleSpend: 0, raise: 0, fbRaise: 0, googleRaise: 0 }
+        );
         return (
           <div key={section} className="overflow-hidden rounded-lg border border-black/10 dark:border-white/10">
             <div className="border-b border-black/10 bg-black/[.03] px-4 py-2 font-medium dark:border-white/10 dark:bg-white/[.05]">
@@ -67,6 +78,8 @@ function GuruProjectDrilldown({ guru, rows, onBack }: { guru: string; rows: Proj
                       <th className="px-3 py-2 text-right font-medium">FB Spend</th>
                       <th className="px-3 py-2 text-right font-medium">Google Spend</th>
                       <th className="px-3 py-2 text-right font-semibold text-primary">Raise</th>
+                      <th className="px-3 py-2 text-right font-medium">FB Raise</th>
+                      <th className="px-3 py-2 text-right font-medium">Google Raise</th>
                     </>
                   )}
                 </tr>
@@ -83,10 +96,27 @@ function GuruProjectDrilldown({ guru, rows, onBack }: { guru: string; rows: Proj
                         <td className="px-3 py-2 text-right font-semibold text-secondary dark:text-primary">
                           {currency.format(p.raise)}
                         </td>
+                        <td className="px-3 py-2 text-right">{currency.format(p.fbRaise)}</td>
+                        <td className="px-3 py-2 text-right">{currency.format(p.googleRaise)}</td>
                       </>
                     )}
                   </tr>
                 ))}
+                <tr className="border-t border-black/10 bg-black/[.03] dark:border-white/10 dark:bg-white/[.05]">
+                  <td className="px-3 py-2 font-semibold">Total</td>
+                  <td className="px-3 py-2 text-right font-semibold">{currency.format(totals.spend)}</td>
+                  {hasPlatform && (
+                    <>
+                      <td className="px-3 py-2 text-right font-semibold">{currency.format(totals.fbSpend)}</td>
+                      <td className="px-3 py-2 text-right font-semibold">{currency.format(totals.googleSpend)}</td>
+                      <td className="px-3 py-2 text-right font-semibold text-secondary dark:text-primary">
+                        {currency.format(totals.raise)}
+                      </td>
+                      <td className="px-3 py-2 text-right font-semibold">{currency.format(totals.fbRaise)}</td>
+                      <td className="px-3 py-2 text-right font-semibold">{currency.format(totals.googleRaise)}</td>
+                    </>
+                  )}
+                </tr>
               </tbody>
             </table>
           </div>
