@@ -155,6 +155,7 @@ export function parseLeadFullKickOff(values: unknown[][]): ParseResult<ProjectMe
       commission: ["% commission", "commission"],
       adAccount: ["ad account"],
       type: ["type"],
+      guru: ["guru name(s)", "guru names", "guru"],
       sourceUrl: ["source of data"],
       include: ["include"],
     },
@@ -176,7 +177,7 @@ export function parseLeadFullKickOff(values: unknown[][]): ParseResult<ProjectMe
       commissionPct: toNumber(cell(raw, col.commission)),
       adAccount: toStringOrNull(cell(raw, col.adAccount)),
       googleAdAccount: null,
-      guru: null,
+      guru: toStringOrNull(cell(raw, col.guru)),
       type,
       sourceUrl: toStringOrNull(cell(raw, col.sourceUrl)),
       include: toBool(cell(raw, col.include)),
@@ -263,7 +264,8 @@ export function parsePlAds(values: unknown[][]): ParseResult<PlProjectMeta> {
 export function parseLeadGenerationTab(
   values: unknown[][],
   project: string,
-  sourceTab: string
+  sourceTab: string,
+  guru: string | null = null
 ): ParseResult<ProjectDayRow> {
   const warnings: string[] = [];
   if (values.length === 0) return { rows: [], warnings };
@@ -314,6 +316,7 @@ export function parseLeadGenerationTab(
       googleConversions: null,
       googleRoas: null,
       sourceTab,
+      guru,
     });
   }
 
@@ -334,7 +337,8 @@ export function parseLiveAdsTab(
   values: unknown[][],
   project: string,
   section: ProjectDayRow["section"],
-  sourceTab: string
+  sourceTab: string,
+  guru: string | null = null
 ): ParseResult<ProjectDayRow> {
   const warnings: string[] = [];
   if (values.length === 0) return { rows: [], warnings };
@@ -398,6 +402,7 @@ export function parseLiveAdsTab(
       googleConversions: toNumber(cell(raw, col.googleConversions)),
       googleRoas: toNumber(cell(raw, col.googleRoas)),
       sourceTab,
+      guru,
     });
   }
 

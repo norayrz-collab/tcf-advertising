@@ -1,19 +1,127 @@
 "use client";
 
-import { useMemo } from "react";
+import { Fragment, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSnapshot } from "@/lib/hooks/useSnapshot";
 import {
   DATE_RANGE_PRESETS,
   filterByDateRange,
+  guruBreakdown,
   platformBreakdown,
   sumKpis,
   type CustomRange,
   type DateRangeKey,
+  type GuruSectionTotals,
 } from "@/lib/aggregate";
 import type { ProjectDayRow } from "@/lib/types";
 
 const currency = new Intl.NumberFormat(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+
+function GuruBreakdownTable({ rows }: { rows: ProjectDayRow[] }) {
+  const gurus = guruBreakdown(rows);
+
+  if (gurus.length === 0) return null;
+
+  const platformCols: { key: "cf" | "ecom" | "full"; label: string }[] = [
+    { key: "cf", label: "CF" },
+    { key: "ecom", label: "Ecom" },
+    { key: "full", label: "Full" },
+  ];
+  const simpleCols: { key: "leadgen" | "pl"; label: string }[] = [
+    { key: "leadgen", label: "Leadgen" },
+    { key: "pl", label: "PL" },
+  ];
+
+  return (
+    <div className="overflow-x-auto rounded-lg border border-black/10 dark:border-white/10">
+      <table className="w-full text-sm">
+        <thead className="border-b border-black/10 dark:border-white/10">
+          <tr>
+            <th rowSpan={2} className="px-3 py-2 text-left font-medium text-black/50 dark:text-white/50">
+              Specialist
+            </th>
+            {platformCols.map((c) => (
+              <th
+                key={c.key}
+                colSpan={4}
+                className="border-l border-black/10 px-3 py-1 text-center font-medium dark:border-white/10"
+              >
+                {c.label}
+              </th>
+            ))}
+            {simpleCols.map((c) => (
+              <th
+                key={c.key}
+                colSpan={2}
+                className="border-l border-black/10 px-3 py-1 text-center font-medium dark:border-white/10"
+              >
+                {c.label}
+              </th>
+            ))}
+          </tr>
+          <tr className="border-t border-black/5 dark:border-white/5">
+            {platformCols.map((c) => (
+              <Fragment key={c.key}>
+                <th className="border-l border-black/10 px-3 py-1.5 text-right text-xs font-medium text-black/50 dark:border-white/10 dark:text-white/50">
+                  Spend
+                </th>
+                <th className="px-3 py-1.5 text-right text-xs font-semibold text-primary">Raise</th>
+                <th className="px-3 py-1.5 text-right text-xs font-medium text-black/50 dark:text-white/50">FB</th>
+                <th className="px-3 py-1.5 text-right text-xs font-medium text-black/50 dark:text-white/50">
+                  Google
+                </th>
+              </Fragment>
+            ))}
+            {simpleCols.map((c) => (
+              <Fragment key={c.key}>
+                <th className="border-l border-black/10 px-3 py-1.5 text-right text-xs font-medium text-black/50 dark:border-white/10 dark:text-white/50">
+                  Spend
+                </th>
+                <th className="px-3 py-1.5 text-right text-xs font-semibold text-primary">TCF Rev.</th>
+              </Fragment>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {gurus.map((g) => {
+            const platformSection = (t: GuruSectionTotals) => (
+              <>
+                <td className="border-l border-black/10 px-3 py-2 text-right dark:border-white/10">
+                  {currency.format(t.spend)}
+                </td>
+                <td className="px-3 py-2 text-right font-semibold text-secondary dark:text-primary">
+                  {currency.format(t.raise)}
+                </td>
+                <td className="px-3 py-2 text-right">{currency.format(t.fbRaise)}</td>
+                <td className="px-3 py-2 text-right">{currency.format(t.googleRaise)}</td>
+              </>
+            );
+            const simpleSection = (t: GuruSectionTotals) => (
+              <>
+                <td className="border-l border-black/10 px-3 py-2 text-right dark:border-white/10">
+                  {currency.format(t.spend)}
+                </td>
+                <td className="px-3 py-2 text-right font-semibold text-secondary dark:text-primary">
+                  {currency.format(t.revenue)}
+                </td>
+              </>
+            );
+            return (
+              <tr key={g.guru} className="border-b border-black/5 last:border-0 dark:border-white/5">
+                <td className="px-3 py-2 font-medium">{g.guru}</td>
+                {platformSection(g.cf)}
+                {platformSection(g.ecom)}
+                {platformSection(g.full)}
+                {simpleSection(g.leadgen)}
+                {simpleSection(g.pl)}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 function BreakdownTable({ label, rows }: { label: string; rows: ProjectDayRow[] }) {
   const kpis = sumKpis(rows);
@@ -99,7 +207,7 @@ export function OkrDashboard() {
     // "Overall" here matches OKR's original definition: Ads service (CF) +
     // Ecom ads service + Full campaigns — Leadgen/PL aren't part of it.
     const overall = [...ecom, ...cf, ...full];
-    return { ecom, cf, full, overall };
+    return { ecom, cf, full, overall, filtered };
   }, [snapshot, range, customRange]);
 
   if (isLoading) return <p className="text-sm text-black/50 dark:text-white/50">Loading…</p>;
@@ -166,6 +274,11 @@ export function OkrDashboard() {
         <BreakdownTable label="CF Projects" rows={bySection.cf} />
         <BreakdownTable label="Full Projects" rows={bySection.full} />
         <BreakdownTable label="Overall (Ecom + CF + Full)" rows={bySection.overall} />
+      </div>
+
+      <div>
+        <h2 className="mb-3 text-lg font-semibold">By Specialist</h2>
+        <GuruBreakdownTable rows={bySection.filtered} />
       </div>
     </div>
   );

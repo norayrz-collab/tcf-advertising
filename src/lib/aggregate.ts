@@ -179,3 +179,91 @@ export function platformBreakdown(rows: ProjectDayRow[]): { facebook: PlatformTo
     google: sumPlatform("googleSpend", "googleRaise", "googleConversions", "googleRoas"),
   };
 }
+
+export interface GuruSectionTotals {
+  spend: number;
+  raise: number;
+  revenue: number;
+  fbSpend: number;
+  fbRaise: number;
+  googleSpend: number;
+  googleRaise: number;
+}
+
+export interface GuruTotals {
+  guru: string;
+  cf: GuruSectionTotals;
+  ecom: GuruSectionTotals;
+  full: GuruSectionTotals;
+  leadgen: GuruSectionTotals;
+  pl: GuruSectionTotals;
+}
+
+function emptyGuruSection(): GuruSectionTotals {
+  return { spend: 0, raise: 0, revenue: 0, fbSpend: 0, fbRaise: 0, googleSpend: 0, googleRaise: 0 };
+}
+
+/** Per-specialist breakdown, by section and Facebook/Google — sourced from
+ * each project's own "Guru name(s)" column (Ads Campaign details, Lead- Full-
+ * Kick off, PL Ads). A project with multiple gurus listed (e.g. "Norayr,
+ * Arsen") splits its numbers evenly between them — there's no way to know
+ * the real split from the sheet alone, so this is the best available
+ * approximation. Rows with no guru filled in land in "Unassigned" rather
+ * than being silently dropped. */
+export function guruBreakdown(rows: ProjectDayRow[]): GuruTotals[] {
+  const map = new Map<string, GuruTotals>();
+
+  function getOrCreate(name: string): GuruTotals {
+    const key = name.trim().toLowerCase();
+    let existing = map.get(key);
+    if (!existing) {
+      existing = {
+        guru: name.trim(),
+        cf: emptyGuruSection(),
+        ecom: emptyGuruSection(),
+        full: emptyGuruSection(),
+        leadgen: emptyGuruSection(),
+        pl: emptyGuruSection(),
+      };
+      map.set(key, existing);
+    }
+    return existing;
+  }
+
+  for (const row of rows) {
+    const names = (row.guru ?? "")
+      .split(",")
+      .map((n) => n.trim())
+      .filter(Boolean);
+    const list = names.length > 0 ? names : ["Unassigned"];
+    const share = 1 / list.length;
+
+    for (const name of list) {
+      const totals = getOrCreate(name);
+      const section =
+        row.section === "CF"
+          ? totals.cf
+          : row.section === "ECOM"
+            ? totals.ecom
+            : row.section === "CF_FULL"
+              ? totals.full
+              : row.section === "LEADGEN"
+                ? totals.leadgen
+                : totals.pl;
+
+      section.spend += (row.spend ?? 0) * share;
+      section.raise += (row.raise ?? 0) * share;
+      section.revenue += (row.revenue ?? 0) * share;
+      section.fbSpend += (row.fbSpend ?? 0) * share;
+      section.fbRaise += (row.fbRaise ?? 0) * share;
+      section.googleSpend += (row.googleSpend ?? 0) * share;
+      section.googleRaise += (row.googleRaise ?? 0) * share;
+    }
+  }
+
+  return [...map.values()].sort((a, b) => {
+    if (a.guru === "Unassigned") return 1;
+    if (b.guru === "Unassigned") return -1;
+    return a.guru.localeCompare(b.guru);
+  });
+}

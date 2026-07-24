@@ -32,6 +32,10 @@ export interface ProjectDayRow {
   googleConversions: number | null;
   googleRoas: number | null;
   sourceTab: string;
+  /** Raw "Guru name(s)" text from this project's source row (e.g. "Norayr,
+   * Arsen") — comma-separated when multiple specialists share a project.
+   * Null if that project's row had no guru filled in. */
+  guru: string | null;
 }
 
 export interface ProjectMeta {

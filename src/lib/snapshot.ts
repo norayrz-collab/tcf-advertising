@@ -38,6 +38,7 @@ const projectDayRowSchema = z.object({
   googleConversions: z.number().nullable(),
   googleRoas: z.number().nullable(),
   sourceTab: z.string(),
+  guru: z.string().nullable(),
 });
 
 function mergeProjectMeta(...sources: ProjectMeta[][]): ProjectMeta[] {
@@ -79,6 +80,7 @@ interface IndividualSheetTarget {
    * the other one), and merging by name alone can silently let the wrong
    * tab's commission win. */
   commissionPct: number | null;
+  guru: string | null;
 }
 
 /** Fetches each project's own "Live Ads"/"Advertising Performance"-style tab
@@ -109,7 +111,13 @@ async function fetchIndividualSheetRows(
     }
     try {
       const values = await fetchExternalTabValues(spreadsheetId, target.tabNames);
-      const parsed = parseLiveAdsTab(values, target.project, target.section, `${target.section} (${target.project})`);
+      const parsed = parseLiveAdsTab(
+        values,
+        target.project,
+        target.section,
+        `${target.section} (${target.project})`,
+        target.guru
+      );
       const commissionPct = target.commissionPct;
 
       const rows = parsed.rows
@@ -202,7 +210,7 @@ async function fetchPlAdsRows(plRows: PlProjectMeta[]): Promise<{ rows: ProjectD
     }
     try {
       const values = await fetchExternalTabValues(spreadsheetId, ["Live Ads", "Advertising Performance"]);
-      const parsed = parseLiveAdsTab(values, m.project, "PL", `PL Ads (${m.project})`);
+      const parsed = parseLiveAdsTab(values, m.project, "PL", `PL Ads (${m.project})`, m.guru);
       const sourceTab = `PL Ads (${m.project})`;
 
       let rows = parsed.rows;
@@ -244,6 +252,7 @@ async function fetchPlAdsRows(plRows: PlProjectMeta[]): Promise<{ rows: ProjectD
               googleConversions: null,
               googleRoas: null,
               sourceTab,
+              guru: m.guru,
             });
           }
         }
@@ -334,7 +343,7 @@ async function fetchLeadgenRows(leadRows: ProjectMeta[]): Promise<{ rows: Projec
     }
     try {
       const values = await fetchExternalTabValues(spreadsheetId, ["Lead Generation"]);
-      const parsed = parseLeadGenerationTab(values, m.project, `Leadgen (${m.project})`);
+      const parsed = parseLeadGenerationTab(values, m.project, `Leadgen (${m.project})`, m.guru);
 
       let rows = parsed.rows;
       const missingCommission = m.commissionPct === null;
@@ -445,6 +454,7 @@ export async function buildSnapshot(): Promise<Snapshot> {
     sourceUrl: string;
     section: Section;
     commissionPct: number | null;
+    guru: string | null;
   }
   const candidates: Candidate[] = [];
 
@@ -461,6 +471,7 @@ export async function buildSnapshot(): Promise<Snapshot> {
         sourceUrl: m.sourceUrl,
         section: classifySection(m.project),
         commissionPct: m.commissionPct,
+        guru: m.guru,
       });
     }
   }
@@ -474,6 +485,7 @@ export async function buildSnapshot(): Promise<Snapshot> {
         sourceUrl: m.sourceUrl,
         section: "CF_FULL",
         commissionPct: m.commissionPct,
+        guru: m.guru,
       });
     }
   }
@@ -489,6 +501,7 @@ export async function buildSnapshot(): Promise<Snapshot> {
       sourceUrl: c.sourceUrl,
       section: c.section,
       commissionPct: c.commissionPct,
+      guru: c.guru,
       // Ecom individual sheets more often use "Advertising Performance" as
       // the tab name instead of "Live Ads" — try that first for Ecom.
       tabNames: c.section === "ECOM" ? ["Advertising Performance", "Live Ads"] : ["Live Ads"],
