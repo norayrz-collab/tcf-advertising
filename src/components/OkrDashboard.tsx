@@ -116,15 +116,24 @@ function GuruSection({ rows }: { rows: ProjectDayRow[] }) {
             <th className="px-3 py-2 text-right font-medium">FB Spend</th>
             <th className="px-3 py-2 text-right font-medium">Google Spend</th>
             <th className="px-3 py-2 text-right font-semibold text-primary">Raise</th>
+            <th className="px-3 py-2 text-right font-medium">FB Raise</th>
+            <th className="px-3 py-2 text-right font-medium">Google Raise</th>
+            <th className="px-3 py-2 text-right font-medium text-black/50 dark:text-white/50">Leadgen+PL Spend</th>
           </tr>
         </thead>
         <tbody>
           {gurus.map((g) => {
-            const spend = g.cf.spend + g.ecom.spend + g.full.spend + g.leadgen.spend + g.pl.spend;
+            // Spend/FB Spend/Google Spend only cover CF/Ecom/Full — the only
+            // sections with a platform split — so Spend = FB + Google exactly.
+            // Leadgen/PL spend (no platform data) is its own separate column
+            // instead of being folded in, which would break that equality.
+            const spend = g.cf.spend + g.ecom.spend + g.full.spend;
             const fbSpend = g.cf.fbSpend + g.ecom.fbSpend + g.full.fbSpend;
             const googleSpend = g.cf.googleSpend + g.ecom.googleSpend + g.full.googleSpend;
-            // Leadgen/PL have no raise concept — they contribute 0 here, which is correct.
             const raise = g.cf.raise + g.ecom.raise + g.full.raise;
+            const fbRaise = g.cf.fbRaise + g.ecom.fbRaise + g.full.fbRaise;
+            const googleRaise = g.cf.googleRaise + g.ecom.googleRaise + g.full.googleRaise;
+            const leadgenPlSpend = g.leadgen.spend + g.pl.spend;
             return (
               <tr key={g.guru} className="border-b border-black/5 last:border-0 dark:border-white/5">
                 <td className="px-3 py-2">
@@ -141,6 +150,11 @@ function GuruSection({ rows }: { rows: ProjectDayRow[] }) {
                 <td className="px-3 py-2 text-right">{currency.format(googleSpend)}</td>
                 <td className="px-3 py-2 text-right font-semibold text-secondary dark:text-primary">
                   {currency.format(raise)}
+                </td>
+                <td className="px-3 py-2 text-right">{currency.format(fbRaise)}</td>
+                <td className="px-3 py-2 text-right">{currency.format(googleRaise)}</td>
+                <td className="px-3 py-2 text-right text-black/60 dark:text-white/60">
+                  {currency.format(leadgenPlSpend)}
                 </td>
               </tr>
             );
