@@ -64,7 +64,7 @@ function GuruProjectDrilldown({ guru, rows, onBack }: { guru: string; rows: Proj
           { spend: 0, fbSpend: 0, googleSpend: 0, raise: 0, fbRaise: 0, googleRaise: 0 }
         );
         return (
-          <div key={section} className="overflow-hidden rounded-lg border border-black/10 dark:border-white/10">
+          <div key={section} className="overflow-hidden rounded-lg border border-black/10 bg-bg-grey dark:border-white/10 dark:bg-white/5">
             <div className="border-b border-black/10 bg-black/[.03] px-4 py-2 font-medium dark:border-white/10 dark:bg-white/[.05]">
               {SECTION_LABELS[section]}
             </div>
@@ -137,7 +137,7 @@ function GuruSection({ rows }: { rows: ProjectDayRow[] }) {
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-black/10 dark:border-white/10">
+    <div className="overflow-hidden rounded-lg border border-black/10 bg-bg-grey dark:border-white/10 dark:bg-white/5">
       <table className="w-full text-sm">
         <thead className="border-b border-black/10 dark:border-white/10">
           <tr>
@@ -200,7 +200,7 @@ function BreakdownTable({ label, rows }: { label: string; rows: ProjectDayRow[] 
   const platforms = platformBreakdown(rows);
 
   return (
-    <div className="overflow-hidden rounded-lg border border-black/10 dark:border-white/10">
+    <div className="overflow-hidden rounded-lg border border-black/10 bg-bg-grey dark:border-white/10 dark:bg-white/5">
       <div className="border-b border-black/10 bg-black/[.03] px-4 py-2 font-medium dark:border-white/10 dark:bg-white/[.05]">
         {label}
       </div>
