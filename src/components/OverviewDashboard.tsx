@@ -151,7 +151,7 @@ export function OverviewDashboard() {
             <Link
               key={s.key}
               href={s.href}
-              className="rounded-lg border border-black/10 p-4 transition-colors hover:border-black/30 dark:border-white/10 dark:hover:border-white/30"
+              className="rounded-lg border border-black/10 bg-bg-grey p-4 transition-colors hover:border-black/30 dark:border-white/10 dark:bg-white/5 dark:hover:border-white/30"
             >
               <div className="text-sm font-medium text-black/60 dark:text-white/60">{s.label}</div>
               {hasRaise ? (

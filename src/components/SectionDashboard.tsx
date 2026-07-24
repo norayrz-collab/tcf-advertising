@@ -46,7 +46,7 @@ function KpiCard({ label, value, highlight }: { label: string; value: string; hi
       className={
         highlight
           ? "rounded-lg border-2 border-primary bg-primary/10 p-4"
-          : "rounded-lg border border-black/10 p-4 dark:border-white/10"
+          : "rounded-lg border border-black/10 bg-bg-grey p-4 dark:border-white/10 dark:bg-white/5"
       }
     >
       <div
