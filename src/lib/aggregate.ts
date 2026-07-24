@@ -1,4 +1,4 @@
-import type { ProjectDayRow } from "./types";
+import type { ProjectDayRow, Section } from "./types";
 
 export const DATE_RANGE_PRESETS = [
   { key: "7d", label: "7 days", days: 7 },
@@ -266,4 +266,60 @@ export function guruBreakdown(rows: ProjectDayRow[]): GuruTotals[] {
     if (b.guru === "Unassigned") return -1;
     return a.guru.localeCompare(b.guru);
   });
+}
+
+export interface GuruProjectTotals {
+  project: string;
+  section: Section;
+  spend: number;
+  raise: number;
+  revenue: number;
+  fbSpend: number;
+  fbRaise: number;
+  googleSpend: number;
+  googleRaise: number;
+}
+
+/** One guru's numbers broken down by individual project (drill-down from
+ * guruBreakdown's per-section summary). Same 50/50 multi-guru split rule. */
+export function guruProjectBreakdown(rows: ProjectDayRow[], guruName: string): GuruProjectTotals[] {
+  const map = new Map<string, GuruProjectTotals>();
+  const target = guruName.trim().toLowerCase();
+
+  for (const row of rows) {
+    const names = (row.guru ?? "")
+      .split(",")
+      .map((n) => n.trim())
+      .filter(Boolean);
+    const list = names.length > 0 ? names : ["Unassigned"];
+    if (!list.some((n) => n.toLowerCase() === target)) continue;
+    const share = 1 / list.length;
+
+    const key = `${row.project.trim().toLowerCase()}::${row.section}`;
+    let existing = map.get(key);
+    if (!existing) {
+      existing = {
+        project: row.project,
+        section: row.section,
+        spend: 0,
+        raise: 0,
+        revenue: 0,
+        fbSpend: 0,
+        fbRaise: 0,
+        googleSpend: 0,
+        googleRaise: 0,
+      };
+      map.set(key, existing);
+    }
+
+    existing.spend += (row.spend ?? 0) * share;
+    existing.raise += (row.raise ?? 0) * share;
+    existing.revenue += (row.revenue ?? 0) * share;
+    existing.fbSpend += (row.fbSpend ?? 0) * share;
+    existing.fbRaise += (row.fbRaise ?? 0) * share;
+    existing.googleSpend += (row.googleSpend ?? 0) * share;
+    existing.googleRaise += (row.googleRaise ?? 0) * share;
+  }
+
+  return [...map.values()].sort((a, b) => b.spend - a.spend);
 }

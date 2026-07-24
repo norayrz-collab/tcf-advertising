@@ -1,119 +1,147 @@
 "use client";
 
-import { Fragment, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSnapshot } from "@/lib/hooks/useSnapshot";
 import {
   DATE_RANGE_PRESETS,
   filterByDateRange,
   guruBreakdown,
+  guruProjectBreakdown,
   platformBreakdown,
   sumKpis,
   type CustomRange,
   type DateRangeKey,
-  type GuruSectionTotals,
 } from "@/lib/aggregate";
-import type { ProjectDayRow } from "@/lib/types";
+import type { ProjectDayRow, Section } from "@/lib/types";
 
 const currency = new Intl.NumberFormat(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 
-function GuruBreakdownTable({ rows }: { rows: ProjectDayRow[] }) {
-  const gurus = guruBreakdown(rows);
+const SECTION_LABELS: Record<Section, string> = {
+  CF: "CF Ads",
+  ECOM: "Ecom Ads",
+  CF_FULL: "CF Full",
+  LEADGEN: "Leadgen Ads",
+  PL: "PL Ads",
+};
+// Only these sections have a Facebook/Google split — Leadgen/PL don't track by platform.
+const HAS_PLATFORM_SPLIT: Section[] = ["CF", "ECOM", "CF_FULL"];
+
+function GuruProjectDrilldown({ guru, rows, onBack }: { guru: string; rows: ProjectDayRow[]; onBack: () => void }) {
+  const projects = useMemo(() => guruProjectBreakdown(rows, guru), [rows, guru]);
+
+  const bySection = useMemo(() => {
+    const map = new Map<Section, typeof projects>();
+    for (const p of projects) {
+      const list = map.get(p.section) ?? [];
+      list.push(p);
+      map.set(p.section, list);
+    }
+    return map;
+  }, [projects]);
+
+  return (
+    <div className="flex flex-col gap-4">
+      <button
+        type="button"
+        onClick={onBack}
+        className="self-start text-sm text-black/50 hover:text-black dark:text-white/50 dark:hover:text-white"
+      >
+        ← Back to all gurus
+      </button>
+      <h3 className="text-base font-semibold">{guru}</h3>
+      {[...bySection.entries()].map(([section, projs]) => {
+        const hasPlatform = HAS_PLATFORM_SPLIT.includes(section);
+        return (
+          <div key={section} className="overflow-hidden rounded-lg border border-black/10 dark:border-white/10">
+            <div className="border-b border-black/10 bg-black/[.03] px-4 py-2 font-medium dark:border-white/10 dark:bg-white/[.05]">
+              {SECTION_LABELS[section]}
+            </div>
+            <table className="w-full text-sm">
+              <thead className="border-b border-black/10 dark:border-white/10">
+                <tr>
+                  <th className="px-3 py-2 text-left font-medium text-black/50 dark:text-white/50">Project</th>
+                  <th className="px-3 py-2 text-right font-medium">Spend</th>
+                  {hasPlatform && (
+                    <>
+                      <th className="px-3 py-2 text-right font-medium">FB Spend</th>
+                      <th className="px-3 py-2 text-right font-medium">Google Spend</th>
+                      <th className="px-3 py-2 text-right font-semibold text-primary">Raise</th>
+                    </>
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                {projs.map((p) => (
+                  <tr key={p.project} className="border-b border-black/5 last:border-0 dark:border-white/5">
+                    <td className="px-3 py-2">{p.project}</td>
+                    <td className="px-3 py-2 text-right">{currency.format(p.spend)}</td>
+                    {hasPlatform && (
+                      <>
+                        <td className="px-3 py-2 text-right">{currency.format(p.fbSpend)}</td>
+                        <td className="px-3 py-2 text-right">{currency.format(p.googleSpend)}</td>
+                        <td className="px-3 py-2 text-right font-semibold text-secondary dark:text-primary">
+                          {currency.format(p.raise)}
+                        </td>
+                      </>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function GuruSection({ rows }: { rows: ProjectDayRow[] }) {
+  const [selected, setSelected] = useState<string | null>(null);
+  const gurus = useMemo(() => guruBreakdown(rows), [rows]);
 
   if (gurus.length === 0) return null;
 
-  const platformCols: { key: "cf" | "ecom" | "full"; label: string }[] = [
-    { key: "cf", label: "CF" },
-    { key: "ecom", label: "Ecom" },
-    { key: "full", label: "Full" },
-  ];
-  const simpleCols: { key: "leadgen" | "pl"; label: string }[] = [
-    { key: "leadgen", label: "Leadgen" },
-    { key: "pl", label: "PL" },
-  ];
+  if (selected) {
+    return <GuruProjectDrilldown guru={selected} rows={rows} onBack={() => setSelected(null)} />;
+  }
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-black/10 dark:border-white/10">
+    <div className="overflow-hidden rounded-lg border border-black/10 dark:border-white/10">
       <table className="w-full text-sm">
         <thead className="border-b border-black/10 dark:border-white/10">
           <tr>
-            <th rowSpan={2} className="px-3 py-2 text-left font-medium text-black/50 dark:text-white/50">
-              Guru
-            </th>
-            {platformCols.map((c) => (
-              <th
-                key={c.key}
-                colSpan={4}
-                className="border-l border-black/10 px-3 py-1 text-center font-medium dark:border-white/10"
-              >
-                {c.label}
-              </th>
-            ))}
-            {simpleCols.map((c) => (
-              <th
-                key={c.key}
-                colSpan={2}
-                className="border-l border-black/10 px-3 py-1 text-center font-medium dark:border-white/10"
-              >
-                {c.label}
-              </th>
-            ))}
-          </tr>
-          <tr className="border-t border-black/5 dark:border-white/5">
-            {platformCols.map((c) => (
-              <Fragment key={c.key}>
-                <th className="border-l border-black/10 px-3 py-1.5 text-right text-xs font-medium text-black/50 dark:border-white/10 dark:text-white/50">
-                  Spend
-                </th>
-                <th className="px-3 py-1.5 text-right text-xs font-semibold text-primary">Raise</th>
-                <th className="px-3 py-1.5 text-right text-xs font-medium text-black/50 dark:text-white/50">FB</th>
-                <th className="px-3 py-1.5 text-right text-xs font-medium text-black/50 dark:text-white/50">
-                  Google
-                </th>
-              </Fragment>
-            ))}
-            {simpleCols.map((c) => (
-              <Fragment key={c.key}>
-                <th className="border-l border-black/10 px-3 py-1.5 text-right text-xs font-medium text-black/50 dark:border-white/10 dark:text-white/50">
-                  Spend
-                </th>
-                <th className="px-3 py-1.5 text-right text-xs font-semibold text-primary">TCF Rev.</th>
-              </Fragment>
-            ))}
+            <th className="px-3 py-2 text-left font-medium text-black/50 dark:text-white/50">Guru</th>
+            <th className="px-3 py-2 text-right font-medium">Spend</th>
+            <th className="px-3 py-2 text-right font-medium">FB Spend</th>
+            <th className="px-3 py-2 text-right font-medium">Google Spend</th>
+            <th className="px-3 py-2 text-right font-semibold text-primary">Raise</th>
           </tr>
         </thead>
         <tbody>
           {gurus.map((g) => {
-            const platformSection = (t: GuruSectionTotals) => (
-              <>
-                <td className="border-l border-black/10 px-3 py-2 text-right dark:border-white/10">
-                  {currency.format(t.spend)}
-                </td>
-                <td className="px-3 py-2 text-right font-semibold text-secondary dark:text-primary">
-                  {currency.format(t.raise)}
-                </td>
-                <td className="px-3 py-2 text-right">{currency.format(t.fbRaise)}</td>
-                <td className="px-3 py-2 text-right">{currency.format(t.googleRaise)}</td>
-              </>
-            );
-            const simpleSection = (t: GuruSectionTotals) => (
-              <>
-                <td className="border-l border-black/10 px-3 py-2 text-right dark:border-white/10">
-                  {currency.format(t.spend)}
-                </td>
-                <td className="px-3 py-2 text-right font-semibold text-secondary dark:text-primary">
-                  {currency.format(t.revenue)}
-                </td>
-              </>
-            );
+            const spend = g.cf.spend + g.ecom.spend + g.full.spend + g.leadgen.spend + g.pl.spend;
+            const fbSpend = g.cf.fbSpend + g.ecom.fbSpend + g.full.fbSpend;
+            const googleSpend = g.cf.googleSpend + g.ecom.googleSpend + g.full.googleSpend;
+            // Leadgen/PL have no raise concept — they contribute 0 here, which is correct.
+            const raise = g.cf.raise + g.ecom.raise + g.full.raise;
             return (
               <tr key={g.guru} className="border-b border-black/5 last:border-0 dark:border-white/5">
-                <td className="px-3 py-2 font-medium">{g.guru}</td>
-                {platformSection(g.cf)}
-                {platformSection(g.ecom)}
-                {platformSection(g.full)}
-                {simpleSection(g.leadgen)}
-                {simpleSection(g.pl)}
+                <td className="px-3 py-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelected(g.guru)}
+                    className="font-medium text-secondary hover:underline dark:text-primary"
+                  >
+                    {g.guru}
+                  </button>
+                </td>
+                <td className="px-3 py-2 text-right">{currency.format(spend)}</td>
+                <td className="px-3 py-2 text-right">{currency.format(fbSpend)}</td>
+                <td className="px-3 py-2 text-right">{currency.format(googleSpend)}</td>
+                <td className="px-3 py-2 text-right font-semibold text-secondary dark:text-primary">
+                  {currency.format(raise)}
+                </td>
               </tr>
             );
           })}
@@ -278,7 +306,7 @@ export function OkrDashboard() {
 
       <div>
         <h2 className="mb-3 text-lg font-semibold">By Guru</h2>
-        <GuruBreakdownTable rows={bySection.filtered} />
+        <GuruSection rows={bySection.filtered} />
       </div>
     </div>
   );
