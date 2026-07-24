@@ -38,7 +38,7 @@ function GuruBreakdownTable({ rows }: { rows: ProjectDayRow[] }) {
         <thead className="border-b border-black/10 dark:border-white/10">
           <tr>
             <th rowSpan={2} className="px-3 py-2 text-left font-medium text-black/50 dark:text-white/50">
-              Specialist
+              Guru
             </th>
             {platformCols.map((c) => (
               <th
@@ -277,7 +277,7 @@ export function OkrDashboard() {
       </div>
 
       <div>
-        <h2 className="mb-3 text-lg font-semibold">By Specialist</h2>
+        <h2 className="mb-3 text-lg font-semibold">By Guru</h2>
         <GuruBreakdownTable rows={bySection.filtered} />
       </div>
     </div>
